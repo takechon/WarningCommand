@@ -88,15 +88,19 @@ window.onload = function() {
     // データいろいろ初期化
     initData();
 
+    canvas.addEventListener('mousedown', mousedownfunc, true);
+    canvas.addEventListener('touchstart', touchstartfunc, true);
+    canvas.addEventListener('mousemove', mousemovefunc, false);
+    canvas.addEventListener('touchmove', touchmovefunc, false);
     canvas.addEventListener('mouseup', mouseupfunc, true);
     canvas.addEventListener('mouseout', mouseupfunc, false);
-    canvas.addEventListener('mousedown', mousedownfunc, true);
-    canvas.addEventListener('mousemove', mousemovefunc, false);
+    canvas.addEventListener('touchend', touchendfunc, false);
 
     // ループ処理ぐるぐる!
     var loop = function() {
         canvas.width = document.documentElement.clientWidth;
         canvas.height = document.documentElement.clientHeight;
+        /*
         screen_unitX = canvas.width;
         screen_unitY = canvas.height;
         if (canvas.width > canvas.height) {
@@ -105,31 +109,38 @@ window.onload = function() {
         else {
             screen_unit = canvas.width;
         }
+        */
+
+        if (canvas.width > canvas.height) {
+            screen_unit = canvas.height;
+            screen_unitX = canvas.height;
+            screen_unitY = canvas.height;
+            adjX = (canvas.width - canvas.height) / 2;
+            adjY = 0;
+        }
+        else {
+            screen_unit = canvas.width;
+            screen_unitX = canvas.width;
+            screen_unitY = canvas.width;
+            adjX = 0;
+            adjY = (canvas.height - canvas.width) / 2;
+        }
 
         fps.check();
         cc.save();
 
-        cc.fillStyle = '#000000';
+        cc.fillStyle = '#404040';
         cc.fillRect(0, 0, canvas.width, canvas.height);
+        cc.fillStyle = '#000000';
+        cc.fillRect(calcUnitX(0), calcUnitY(0),
+                    calcUnit(UNIT), calcUnit(UNIT));
 
-        // カーソル描画
-        cc.strokeStyle = '#ff8000';
-        cc.lineWidth = calcUnit(1);
-        cc.beginPath();
-        var curLen = calcUnit(5);
-        cc.moveTo(calcUnitX(curX), calcUnitY(curY) - curLen);
-        cc.lineTo(calcUnitX(curX), calcUnitY(curY) + curLen);
-        cc.stroke();
-        cc.beginPath();
-        cc.moveTo(calcUnitX(curX) - curLen, calcUnitY(curY));
-        cc.lineTo(calcUnitX(curX) + curLen, calcUnitY(curY));
-        cc.stroke();
 
         if (isDrag) {
             curMove();
         }
 
-        for(let i = 0; i < 3; i++) {
+        for (let i = 0; i < 3; i++) {
             for (let j = 0; j < 10; j++) {
                 if (myMissile[i][j].fired) {
                     if (myMissile[i][j].bomb) {
@@ -140,7 +151,8 @@ window.onload = function() {
                         cc.beginPath();
                         cc.arc(calcUnitX(myMissile[i][j].goalX),
                                calcUnitY(myMissile[i][j].goalY),
-                               calcUnit(myMissile[i][j].r), 0, Math.PI * 2, false);
+                               calcUnit(myMissile[i][j].r), 0,
+                               Math.PI * 2, false);
                         cc.fill();
                     }
                     else {
@@ -174,9 +186,9 @@ window.onload = function() {
                         x = calcUnitX(myMissile[i][j].cX);
                         y = calcUnitY(myMissile[i][j].cY);
                         cc.beginPath();
-                        cc.moveTo(x-1, y-1);
-                        cc.lineTo(x+1, y-1);
-                        cc.lineTo(x+1, y+1);
+                        cc.moveTo(x - 1, y - 1);
+                        cc.lineTo(x + 1, y - 1);
+                        cc.lineTo(x + 1, y + 1);
                         cc.closePath();
                         cc.fill();
                     }
@@ -185,6 +197,19 @@ window.onload = function() {
                 }
             }
         }
+
+        // カーソル描画
+        cc.strokeStyle = '#ff8000';
+        cc.lineWidth = calcUnit(1);
+        cc.beginPath();
+        var curLen = calcUnit(5);
+        cc.moveTo(calcUnitX(curX), calcUnitY(curY) - curLen);
+        cc.lineTo(calcUnitX(curX), calcUnitY(curY) + curLen);
+        cc.stroke();
+        cc.beginPath();
+        cc.moveTo(calcUnitX(curX) - curLen, calcUnitY(curY));
+        cc.lineTo(calcUnitX(curX) + curLen, calcUnitY(curY));
+        cc.stroke();
 
         cc.restore();
         setTimeout(loop, fps.getInterval());
@@ -195,12 +220,12 @@ window.onload = function() {
 };
 
 function initData() {
-    for(let i = 0; i < 3; i++) {
+    for (let i = 0; i < 3; i++) {
         myMissile[i] = new Array(myMAX);
         myCount[i] = 0;
         for (let j = 0; j < myMAX; j++) {
             myMissile[i][j] = new Missile();
-            myMissile[i][j].init((UNIT / 6 ) * ((i * 2) + 1), UNIT * 0.95);
+            myMissile[i][j].init((UNIT / 6) * ((i * 2) + 1), UNIT * 0.95);
         }
     }
 }
@@ -208,6 +233,18 @@ function initData() {
 function curMove() {
     curX += Math.cos(Math.atan2(pointY - curY, pointX - curX)) * CURSPEED;
     curY += Math.sin(Math.atan2(pointY - curY, pointX - curX)) * CURSPEED;
+    if (curX > UNIT) {
+        curX = UNIT;
+    }
+    else if (curX < 0) {
+        curX = 0;
+    }
+    if (curY > UNIT) {
+        curY = UNIT;
+    }
+    else if (curY < 0) {
+        curY = 0;
+    }
 }
 
 // マウスダウン
@@ -218,6 +255,15 @@ function mousedownfunc(event) {
     isDrag = true;
 }
 
+// タッチスタート
+function touchstartfunc(event) {
+    event.preventDefault();
+    let rect = event.target.getBoundingClientRect();
+    pointX = acalcUnitX(event.touches[0].clientX - rect.left);
+    pointY = acalcUnitY(event.touches[0].clientY - rect.top);
+    isDrag = true;
+}
+
 // マウスムーブ
 function mousemovefunc(event) {
     let rect = event.target.getBoundingClientRect();
@@ -225,9 +271,17 @@ function mousemovefunc(event) {
     pointY = acalcUnitY(event.clientY - rect.top);
 }
 
+// タッチムーブ
+function touchmovefunc(event) {
+    event.preventDefault();
+    let rect = event.target.getBoundingClientRect();
+    pointX = acalcUnitX(event.touches[0].clientX - rect.left);
+    pointY = acalcUnitY(event.touches[0].clientY - rect.top);
+}
+
 // マウスアップ
 function mouseupfunc(event) {
-    let rect = event.target.getBoundingClientRect();
+    //let rect = event.target.getBoundingClientRect();
     //let x = acalcUnitX(event.clientX - rect.left);
     //let y = acalcUnitY(event.clientY - rect.top);
 
@@ -235,39 +289,57 @@ function mouseupfunc(event) {
     fire(curX, curY);
 }
 
+// タッチエンド
+function touchendfunc(event) {
+    isDrag = false;
+    fire(curX, curY);
+}
+
 function fire(x, y) {
-    if (x < UNIT / 3) {
-        if (myCount[0] != myMAX -1) {
-            setPoint(0, x, y);
-        }
-        else if (myCount[1] != myMAX -1) {
+    if (x > UNIT / 3 && x <= UNIT * 2 / 3) { // 真ん中
+        if (myCount[1] != myMAX - 1) {
             setPoint(1, x, y);
         }
-        else if (myCount[2] != myMAX -1) {
+        else if (x <= UNIT / 2) {
+            if (myCount[0] != myMAX - 1) {
+                setPoint(0, x, y);
+            }
+            else if (myCount[2] != myMAX - 1) {
+                setPoint(2, x, y);
+            }
+        }
+        else {
+            if (myCount[2] != myMAX - 1) {
+                setPoint(2, x, y);
+            }
+            else if (myCount[0] != myMAX - 1) {
+                setPoint(0, x, y);
+            }
+        }
+    }
+    else if (x <= UNIT / 3) {
+        if (myCount[0] != myMAX - 1) {
+            setPoint(0, x, y);
+        }
+        else if (myCount[1] != myMAX - 1) {
+            setPoint(1, x, y);
+        }
+        else if (myCount[2] != myMAX - 1) {
             setPoint(2, x, y);
         }
     }
     else if (x > UNIT * 2 / 3) {
-        if (myCount[2] != myMAX -1) {
+        if (myCount[2] != myMAX - 1) {
             setPoint(2, x, y);
         }
-        else if (myCount[1] != myMAX -1) {
+        else if (myCount[1] != myMAX - 1) {
             setPoint(1, x, y);
         }
-        else if (myCount[0] != myMAX -1) {
+        else if (myCount[0] != myMAX - 1) {
             setPoint(0, x, y);
         }
     }
     else {
-        if (myCount[1] != myMAX -1) {
-            setPoint(1, x, y);
-        }
-        else if (myCount[0] != myMAX -1) {
-            setPoint(0, x, y);
-        }
-        else if (myCount[2] != myMAX -1) {
-            setPoint(2, x, y);
-        }
     }
 }
 
@@ -280,18 +352,18 @@ function calcUnit(n) {
     return Math.floor((screen_unit * n) / UNIT);
 }
 function calcUnitX(n) {
-    return Math.floor((screen_unitX * n) / UNIT);
+    return Math.floor(adjX + (screen_unitX * n) / UNIT);
 }
 function calcUnitY(n) {
-    return Math.floor((screen_unitY * n) / UNIT);
+    return Math.floor(adjY + (screen_unitY * n) / UNIT);
 }
 
 function acalcUnit(n) {
     return (n * UNIT) / screen_unit;
 }
 function acalcUnitX(n) {
-    return (n * UNIT) / screen_unitX;
+    return ((n - adjX) * UNIT) / screen_unitX;
 }
 function acalcUnitY(n) {
-    return (n * UNIT) / screen_unitY;
+    return ((n -adjY)  * UNIT) / screen_unitY;
 }
