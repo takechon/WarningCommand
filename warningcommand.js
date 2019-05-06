@@ -363,45 +363,45 @@ function touchendfunc(event) {
 
 function fire(x, y) {
     if (x > UNIT / 3 && x <= UNIT * 2 / 3) { // 真ん中
-        if (myCount[1] != myMAX - 1) {
+        if (myCount[1] != myMAX) {
             setPoint(1, x, y);
         }
         else if (x <= UNIT / 2) {
-            if (myCount[0] != myMAX - 1) {
+            if (myCount[0] != myMAX) {
                 setPoint(0, x, y);
             }
-            else if (myCount[2] != myMAX - 1) {
+            else if (myCount[2] != myMAX) {
                 setPoint(2, x, y);
             }
         }
         else {
-            if (myCount[2] != myMAX - 1) {
+            if (myCount[2] != myMAX) {
                 setPoint(2, x, y);
             }
-            else if (myCount[0] != myMAX - 1) {
+            else if (myCount[0] != myMAX) {
                 setPoint(0, x, y);
             }
         }
     }
     else if (x <= UNIT / 3) {
-        if (myCount[0] != myMAX - 1) {
+        if (myCount[0] != myMAX) {
             setPoint(0, x, y);
         }
-        else if (myCount[1] != myMAX - 1) {
+        else if (myCount[1] != myMAX) {
             setPoint(1, x, y);
         }
-        else if (myCount[2] != myMAX - 1) {
+        else if (myCount[2] != myMAX) {
             setPoint(2, x, y);
         }
     }
     else if (x > UNIT * 2 / 3) {
-        if (myCount[2] != myMAX - 1) {
+        if (myCount[2] != myMAX) {
             setPoint(2, x, y);
         }
-        else if (myCount[1] != myMAX - 1) {
+        else if (myCount[1] != myMAX) {
             setPoint(1, x, y);
         }
-        else if (myCount[0] != myMAX - 1) {
+        else if (myCount[0] != myMAX) {
             setPoint(0, x, y);
         }
     }
