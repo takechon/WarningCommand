@@ -54,8 +54,8 @@ var Missile = function() {
             this.cY = this.startY + ((time * this.dY) / this.totalTime);
         }
         else {
-            this.r = time - this.totalTime;
-            if(this.r < this.BOMSIZE) {
+            this.r = (time - this.totalTime) * 2;
+            if (this.r < this.BOMSIZE) {
                 this.bomb = true;
                 this.r = this.r / 2.0;
             }

@@ -1,6 +1,8 @@
 // グローバル変数
 var UNIT = 500;
 
+var men = 1;
+
 var curX = UNIT / 2;
 var curY = UNIT / 2;
 var CURSPEED = 10;
@@ -15,21 +17,12 @@ var myMissile = new Array(3); // [3][10] の配列にする
 var myCount = new Array(3); // [3]
 var MYSPEED = 5;
 
+var eMAX = 0x20;
+var eMissile = new Array(eMAX);
+var eCount = 0;
+var ESPEED = 2.5;
+
 var Gtime = 0;
-
-var Pos = function(x, dx, y, dy) {
-    this.x = x;
-    this.dx = dx;
-    this.y = y;
-    this.dy = dy;
-    this.time = 0;
-    this.move = function() {
-        this.x += this.dx;
-        this.y += this.dy;
-        this.time++;
-    };
-};
-
 
 /**
 * @return {null}
@@ -88,6 +81,8 @@ window.onload = function() {
     // データいろいろ初期化
     initData();
 
+    fireEnemy(); // 敵機発射
+
     canvas.addEventListener('mousedown', mousedownfunc, true);
     canvas.addEventListener('touchstart', touchstartfunc, true);
     canvas.addEventListener('mousemove', mousemovefunc, false);
@@ -100,16 +95,6 @@ window.onload = function() {
     var loop = function() {
         canvas.width = document.documentElement.clientWidth;
         canvas.height = document.documentElement.clientHeight;
-        /*
-        screen_unitX = canvas.width;
-        screen_unitY = canvas.height;
-        if (canvas.width > canvas.height) {
-            screen_unit = canvas.height;
-        }
-        else {
-            screen_unit = canvas.width;
-        }
-        */
 
         if (canvas.width > canvas.height) {
             screen_unit = canvas.height;
@@ -135,66 +120,55 @@ window.onload = function() {
         cc.fillRect(calcUnitX(0), calcUnitY(0),
                     calcUnit(UNIT), calcUnit(UNIT));
 
-
         if (isDrag) {
             curMove();
         }
 
+        // 自ミサイル
         for (let i = 0; i < 3; i++) {
             for (let j = 0; j < 10; j++) {
                 if (myMissile[i][j].fired) {
-                    if (myMissile[i][j].bomb) {
-                        cc.fillStyle = 'rgb(' +
-                            (~~(256 * Math.random())) + ', ' +
-                            (~~(256 * Math.random())) + ', ' +
-                            (~~(256 * Math.random())) + ')';
-                        cc.beginPath();
-                        cc.arc(calcUnitX(myMissile[i][j].goalX),
-                               calcUnitY(myMissile[i][j].goalY),
-                               calcUnit(myMissile[i][j].r), 0,
-                               Math.PI * 2, false);
-                        cc.fill();
+                    if (!myMissile[i][j].bomb) {
+                        drawCross(myMissile[i][j], '#ff8000'); // 十字描画
+                        drawTail(myMissile[i][j], '#808020'); // しっぽ描画
+                        drawDantou(myMissile[i][j], '#ffff80'); // 弾頭描画
                     }
-                    else {
-                        // ゴール
-                        cc.strokeStyle = '#ff8000';
-                        cc.lineWidth = calcUnit(1);
-                        cc.beginPath();
-                        let curLen = calcUnit(5);
-                        let x = calcUnitX(myMissile[i][j].goalX);
-                        let y = calcUnitY(myMissile[i][j].goalY);
-                        cc.moveTo(x - curLen, y - curLen);
-                        cc.lineTo(x + curLen, y + curLen);
-                        cc.stroke();
-                        cc.beginPath();
-                        cc.moveTo(x + curLen, y - curLen);
-                        cc.lineTo(x - curLen, y + curLen);
-                        cc.stroke();
-
-                        // しっぽ
-                        cc.strokeStyle = '#808020';
-                        cc.lineWidth = calcUnit(1);
-                        cc.beginPath();
-                        cc.moveTo(calcUnitX(myMissile[i][j].startX),
-                                  calcUnitY(myMissile[i][j].startY));
-                        cc.lineTo(calcUnitX(myMissile[i][j].cX),
-                                  calcUnitY(myMissile[i][j].cY));
-                        cc.stroke();
-
-                        // 弾頭
-                        cc.fillStyle = '#ffff80';
-                        x = calcUnitX(myMissile[i][j].cX);
-                        y = calcUnitY(myMissile[i][j].cY);
-                        cc.beginPath();
-                        cc.moveTo(x - 1, y - 1);
-                        cc.lineTo(x + 1, y - 1);
-                        cc.lineTo(x + 1, y + 1);
-                        cc.closePath();
-                        cc.fill();
-                    }
-                    myMissile[i][j].calcPos(Gtime); // 座標計算
-
+                    //myMissile[i][j].calcPos(Gtime); // 座標計算
                 }
+            }
+        }
+        // 敵ミサイル
+        for (let i = 0; i < eCount; i++) {
+            if (eMissile[i].fired) {
+                if (!eMissile[i].bomb) {
+                    drawTail(eMissile[i], '#802080'); // しっぽ描画
+                    drawDantou(eMissile[i], '#ff80ff'); // 弾頭描画
+                }
+                //eMissile[i].calcPos(Gtime); // 座標計算
+            }
+        }
+        // 自ミサイル (爆炎を最後に描画(しっぽ/軌跡を上書き))
+        for (let i = 0; i < 3; i++) {
+            for (let j = 0; j < 10; j++) {
+                if (myMissile[i][j].fired && myMissile[i][j].bomb) {
+                    drawBomb(myMissile[i][j]); // 爆炎描画
+                    // 当たり判定
+                    for (let k = 0; k < eCount; k++) {
+                        if (eMissile[k].fired && !eMissile[k].bomb) {
+                            checkHit(myMissile[i][j], eMissile[k]);
+                        }
+                    }
+                }
+                myMissile[i][j].calcPos(Gtime); // 座標計算
+            }
+        }
+        // 敵ミサイル
+        for (let i = 0; i < eCount; i++) {
+            if (eMissile[i].fired) {
+                if (eMissile[i].bomb) {
+                    drawBomb(eMissile[i]); // 爆炎描画
+                }
+                eMissile[i].calcPos(Gtime); // 座標計算
             }
         }
 
@@ -219,6 +193,67 @@ window.onload = function() {
     loop();
 };
 
+function checkHit(m, e) {
+    let x = m.goalX - e.cX;
+    let y = m.goalY - e.cY;
+
+    if ((x * x) + (y * y) - (m.r * m.r) <= 0) {
+        e.goalX = e.cX;
+        e.goalY = e.cY;
+        e.bomb = true;
+        e.startTime = Gtime;
+        e.totalTime = 0;
+    }
+}
+
+function drawBomb(m) {
+    cc.fillStyle = 'rgb(' +
+        (~~(256 * Math.random())) + ', ' +
+        (~~(256 * Math.random())) + ', ' +
+        (~~(256 * Math.random())) + ')';
+    cc.beginPath();
+    cc.arc(calcUnitX(m.goalX), calcUnitY(m.goalY),
+           calcUnit(m.r), 0,
+           Math.PI * 2, false);
+    cc.fill();
+}
+
+function drawCross(missile, color) {
+    cc.strokeStyle = color;
+    cc.lineWidth = calcUnit(1);
+    cc.beginPath();
+    let curLen = calcUnit(5);
+    let x = calcUnitX(missile.goalX);
+    let y = calcUnitY(missile.goalY);
+    cc.moveTo(x - curLen, y - curLen);
+    cc.lineTo(x + curLen, y + curLen);
+    cc.stroke();
+    cc.beginPath();
+    cc.moveTo(x + curLen, y - curLen);
+    cc.lineTo(x - curLen, y + curLen);
+    cc.stroke();
+}
+function drawTail(missile, color) {
+    cc.strokeStyle = color;
+    cc.lineWidth = calcUnit(1);
+    cc.beginPath();
+    cc.moveTo(calcUnitX(missile.startX),
+              calcUnitY(missile.startY));
+    cc.lineTo(calcUnitX(missile.cX),
+              calcUnitY(missile.cY));
+    cc.stroke();
+}
+function drawDantou(missile, color) {
+    cc.fillStyle = '#ffff80';
+    let x = calcUnitX(missile.cX);
+    let y = calcUnitY(missile.cY);
+    cc.beginPath();
+    cc.moveTo(x - 1, y - 1);
+    cc.lineTo(x + 1, y - 1);
+    cc.lineTo(x + 1, y + 1);
+    cc.closePath();
+    cc.fill();
+}
 function initData() {
     for (let i = 0; i < 3; i++) {
         myMissile[i] = new Array(myMAX);
@@ -228,6 +263,37 @@ function initData() {
             myMissile[i][j].init((UNIT / 6) * ((i * 2) + 1), UNIT * 0.95);
         }
     }
+    for (i = 0; i < eMAX; i++) {
+        eMissile[i] = new Missile();
+        eMissile[i].init(0, 0);
+    }
+}
+
+function fireEnemy() {
+    //let mNum = men;//men + 1; // ToDo
+    let mNum = 4; 
+    if (mNum > 4) {
+        mNum = 4;
+    }
+    for (let i = 0; i < mNum; i++) {
+        eMissile[eCount].init(Math.random() * UNIT, 0);
+        eMissile[eCount].fire(Math.random() * UNIT, UNIT * 0.95, ESPEED, Gtime);
+        eCount++;
+    }
+/*
+    mNum = (men + 1) / 2;
+    if (mNum > 2) {
+        mNum = 2;
+    }
+    for (i = mNum; i > 0; i--) {
+        eMissile[eCount++].fire(MathFP.toFP((rand.nextInt() >>> 1) % 100), 0
+                                , baseXf[(rand.nextInt() >>> 1) % 3]
+                                , baseYfc
+                                , e_Speed);
+        eCount &= 0x1f;
+    }
+    menStart = true;
+*/
 }
 
 function curMove() {
@@ -339,8 +405,6 @@ function fire(x, y) {
             setPoint(0, x, y);
         }
     }
-    else {
-    }
 }
 
 function setPoint(base, x, y) {
@@ -365,5 +429,5 @@ function acalcUnitX(n) {
     return ((n - adjX) * UNIT) / screen_unitX;
 }
 function acalcUnitY(n) {
-    return ((n -adjY)  * UNIT) / screen_unitY;
+    return ((n - adjY)  * UNIT) / screen_unitY;
 }
