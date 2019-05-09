@@ -12,9 +12,11 @@ var pointY = UNIT / 2;
 
 var isDrag = false;
 
-var myMAX = 10;
-var myMissile = new Array(3); // [3][10] の配列にする
-var myCount = new Array(3); // [3]
+var myMAX = 30;
+var myMissile = new Array(myMAX);
+var myCt = 0;
+var myBaseCt = new Array(3); // [3]
+var myBaseMAX = 10;
 var MYSPEED = 5;
 
 var eMAX = 0x20;
@@ -125,17 +127,15 @@ window.onload = function() {
         }
 
         // 自ミサイル
-        for (let i = 0; i < 3; i++) {
-            for (let j = 0; j < 10; j++) {
-                if (myMissile[i][j].fired) {
-                    if (!myMissile[i][j].bomb) {
-                        drawCross(myMissile[i][j], '#ff8000'); // 十字描画
-                        drawTail(myMissile[i][j], '#808020'); // しっぽ描画
-                        drawDantou(myMissile[i][j], '#ffff80'); // 弾頭描画
+        for (let i = 0; i < myCt; i++) {
+                if (myMissile[i].fired) {
+                    if (!myMissile[i].bomb) {
+                        drawCross(myMissile[i], '#ff8000'); // 十字描画
+                        drawTail(myMissile[i], '#808020'); // しっぽ描画
+                        drawDantou(myMissile[i], '#ffff80'); // 弾頭描画
                     }
                     //myMissile[i][j].calcPos(Gtime); // 座標計算
                 }
-            }
         }
         // 敵ミサイル
         for (let i = 0; i < eCount; i++) {
@@ -148,19 +148,17 @@ window.onload = function() {
             }
         }
         // 自ミサイル (爆炎を最後に描画(しっぽ/軌跡を上書き))
-        for (let i = 0; i < 3; i++) {
-            for (let j = 0; j < 10; j++) {
-                if (myMissile[i][j].fired && myMissile[i][j].bomb) {
-                    drawBomb(myMissile[i][j]); // 爆炎描画
-                    // 当たり判定
-                    for (let k = 0; k < eCount; k++) {
-                        if (eMissile[k].fired && !eMissile[k].bomb) {
-                            checkHit(myMissile[i][j], eMissile[k]);
-                        }
+        for (let i = 0; i < myCt; i++) {
+            if (myMissile[i].fired && myMissile[i].bomb) {
+                drawBomb(myMissile[i]); // 爆炎描画
+                // 当たり判定
+                for (let k = 0; k < eCount; k++) {
+                    if (eMissile[k].fired && !eMissile[k].bomb) {
+                        checkHit(myMissile[i], eMissile[k]);
                     }
                 }
-                myMissile[i][j].calcPos(Gtime); // 座標計算
             }
+            myMissile[i].calcPos(Gtime); // 座標計算
         }
         // 敵ミサイル
         for (let i = 0; i < eCount; i++) {
@@ -255,13 +253,12 @@ function drawDantou(missile, color) {
     cc.fill();
 }
 function initData() {
-    for (let i = 0; i < 3; i++) {
-        myMissile[i] = new Array(myMAX);
-        myCount[i] = 0;
-        for (let j = 0; j < myMAX; j++) {
-            myMissile[i][j] = new Missile();
-            myMissile[i][j].init((UNIT / 6) * ((i * 2) + 1), UNIT * 0.95);
-        }
+    myBaseCt[0] = 0;
+    myBaseCt[1] = 0;
+    myBaseCt[2] = 0;
+    for (let i = 0; i < myMAX; i++) {
+        myMissile[i] = new Missile();
+        //myMissile[i].init((UNIT / 6) * ((i * 2) + 1), UNIT * 0.95);
     }
     for (i = 0; i < eMAX; i++) {
         eMissile[i] = new Missile();
@@ -363,53 +360,55 @@ function touchendfunc(event) {
 
 function fire(x, y) {
     if (x > UNIT / 3 && x <= UNIT * 2 / 3) { // 真ん中
-        if (myCount[1] != myMAX) {
+        if (myBaseCt[1] != myBaseMAX) {
             setPoint(1, x, y);
         }
         else if (x <= UNIT / 2) {
-            if (myCount[0] != myMAX) {
+            if (myBaseCt[0] != myBaseMAX) {
                 setPoint(0, x, y);
             }
-            else if (myCount[2] != myMAX) {
+            else if (myBaseCt[2] != myBaseMAX) {
                 setPoint(2, x, y);
             }
         }
         else {
-            if (myCount[2] != myMAX) {
+            if (myBaseCt[2] != myBaseMAX) {
                 setPoint(2, x, y);
             }
-            else if (myCount[0] != myMAX) {
+            else if (myBaseCt[0] != myBaseMAX) {
                 setPoint(0, x, y);
             }
         }
     }
     else if (x <= UNIT / 3) {
-        if (myCount[0] != myMAX) {
+        if (myBaseCt[0] != myBaseMAX) {
             setPoint(0, x, y);
         }
-        else if (myCount[1] != myMAX) {
+        else if (myBaseCt[1] != myBaseMAX) {
             setPoint(1, x, y);
         }
-        else if (myCount[2] != myMAX) {
+        else if (myBaseCt[2] != myBaseMAX) {
             setPoint(2, x, y);
         }
     }
     else if (x > UNIT * 2 / 3) {
-        if (myCount[2] != myMAX) {
+        if (myBaseCt[2] != myBaseMAX) {
             setPoint(2, x, y);
         }
-        else if (myCount[1] != myMAX) {
+        else if (myBaseCt[1] != myBaseMAX) {
             setPoint(1, x, y);
         }
-        else if (myCount[0] != myMAX) {
+        else if (myBaseCt[0] != myBaseMAX) {
             setPoint(0, x, y);
         }
     }
 }
 
 function setPoint(base, x, y) {
-    myMissile[base][myCount[base]].fire(x, y, MYSPEED, Gtime);
-    myCount[base]++;
+    myMissile[myCt].init((UNIT / 6) * ((base * 2) + 1), UNIT * 0.95);
+    myMissile[myCt].fire(x, y, MYSPEED, Gtime);
+    myCt++;
+    myBaseCt[base]++;
 }
 
 function calcUnit(n) {
